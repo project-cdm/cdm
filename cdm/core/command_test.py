@@ -1,5 +1,5 @@
 from command import CommandMetaclass
-import click
+import rich_click as click
 
 
 class CommandBase(metaclass=CommandMetaclass):
@@ -65,6 +65,7 @@ class Alpha(CommandBase):
     @click.option('-m', default="NAME", help="设置NAME")
     def set_name(self, m):
         """设置name"""
+        print(self.nn)
         self.name = m
     
     @property

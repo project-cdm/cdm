@@ -36,16 +36,14 @@ class CommandInstance:
     def __call__(self, *args, **kwargs):
         if isinstance(self.origin, staticmethod):
             return self.command(*args, **kwargs)
-        return self.command(self.klass(), *args, **kwargs)
+        return self.command(self.klass, *args, **kwargs)
 
 
 class CommandMetaclass(type):
     @staticmethod
     def command_wrapper(attr_name, attr_value, klass):
         """command_wrapper"""
-        if isinstance(attr_value, staticmethod):
-            attr_value = attr_value.__func__
-        if isinstance(attr_value, classmethod):
+        if isinstance(attr_value, staticmethod) or isinstance(attr_value, classmethod):
             attr_value = attr_value.__func__
         if isinstance(attr_value, click.Command):
             """if the function body is packaged by Command"""
@@ -64,7 +62,7 @@ class CommandMetaclass(type):
     
     def __call__(cls, *args, **kwargs):
         cls.command_set(cls)
-        getattr(cls, CLASS_GROUP_ATTR_NAME)()
+        return getattr(cls, CLASS_GROUP_ATTR_NAME)()
     
     @staticmethod
     def command_set(cls):
@@ -88,7 +86,6 @@ class CommandMetaclass(type):
         setattr(klass, CLASS_GROUP_OPTION_CALLBACKS, set())
         
         def cli(*args, **options):
-            print(getattr(klass, CLASS_GROUP_OPTION_CALLBACKS))
             for option_callback in getattr(klass, CLASS_GROUP_OPTION_CALLBACKS):
                 option_callback(klass, **options)
         
