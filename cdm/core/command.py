@@ -42,16 +42,9 @@ class CommandInstance:
         self.origin = origin
     
     def __call__(self, *args, **kwargs):
-        try:
-            if isinstance(self.origin, staticmethod):
-                return self.command(*args, **kwargs)
-            return self.command(self.klass, *args, **kwargs)
-        except Exception as e:
-            print(e)
-            print(args)
-            print(kwargs)
-            print(self.command)
-            print(self.klass)
+        if isinstance(self.origin, staticmethod):
+            return self.command(*args, **kwargs)
+        return self.command(self.klass, *args, **kwargs)
 
 
 def get_typed_annotation(param: inspect.Parameter, globalns: typing.Dict[str, typing.Any]) -> typing.Any:
@@ -98,19 +91,21 @@ class CommandMetaclass(type):
                 return None
             else:
                 if isinstance(origin_attr_value, classmethod):
-                    attr_value = partial(attr_value, klass)
+                    signature_attr_value = partial(attr_value, klass)
                 elif not isinstance(origin_attr_value, staticmethod):
-                    attr_value = partial(attr_value, klass)
+                    signature_attr_value = partial(attr_value, klass)
+                else:
+                    signature_attr_value = attr_value
                 
-                endpoint_signature = get_typed_signature(attr_value, False)
+                endpoint_signature = get_typed_signature(signature_attr_value, False)
                 signature_params = endpoint_signature.parameters
                 
                 attr = click.command(name=attr_name, help=attr_value.__doc__)(attr_value)
                 for k, v in signature_params.items():
                     param_default = None if v.default == Parameter.empty else v.default
-                    param_type = None if v.annotation == Parameter.empty else v.annotation.__origin__
-                    param_doc = "" if v.annotation == Parameter.empty else " ".join(v.annotation.__metadata__)
-                    attr = click.option(f"--{k}", help=param_doc + f"  default: `{param_default}`", required=False if param_default else True, type=param_type, default=param_default)(attr)
+                    param_type = any if v.annotation == Parameter.empty else v.annotation.__origin__ if hasattr(v.annotation, '__origin__') else v.annotation
+                    param_doc = "" if v.annotation == Parameter.empty else " ".join(v.annotation.__metadata__) if hasattr(v.annotation, '__metadata__') else v.annotation
+                    attr = click.option(f"--{k}", help=f"{param_doc}  default: `{param_default}`", required=False if param_default else True, type=param_type, default=param_default)(attr)
                 setattr(klass, attr_name, attr)
                 return attr
     

@@ -3,85 +3,13 @@ import rich_click as click
 
 
 class CommandBase(metaclass=CommandMetaclass):
-    """Base Command Class"""
+    """Base Command Class"""  # test success
     ...
 
 
 from typing_extensions import Annotated
 
 Meter = Annotated[float, "米"]
-
-
-class Alpha(CommandBase):
-    """
-    Enable :point_right: [yellow]debug mode[/] :point_left:
-    """
-    XX: object = 1
-    
-    name = "Name"
-    zxcv: Annotated[str, "paramName"] = "paramName"
-    
-    def xxx(self, mm: Meter):
-        """xxx"""
-        print("xxx")
-        print(self.name)
-        print("xxx")
-    
-    @staticmethod
-    def sxxx(mm: Annotated[int, "静态方法"] = 1):
-        """sxxx"""
-        print("sxxx")
-    
-    @classmethod
-    def cxxx(cls, mm: Annotated[str, "类方法"] = "defaultValue"):
-        """cxxx"""
-        print(cls.name)
-        print(mm)
-        print("cxxx")
-    
-    @click.command()
-    @click.option("--nn", help="nnnnnn")
-    def yyy(self, nn) -> None:
-        """yyy"""
-        print(nn)
-        print(self.name)
-        print("yyy")
-        return "yyy"
-    
-    @staticmethod
-    @click.command()
-    @click.option("--nn", help="nnnnnn")
-    @click.option("--mm", help="mmmmmmmm")
-    def syyy(nn, mm):
-        """syyy"""
-        print(nn)
-        print(mm)
-        print("syyy")
-        return "syyy"
-    
-    @classmethod
-    @click.command(name="cyyy")
-    @click.option("--nn", help="nnnnnn")
-    def cyyy(cls, nn):
-        """cyyy"""
-        print(nn)
-        print("cyyy")
-        return "cyyy"
-    
-    @click.option('-m', default="NAME", help="设置NAME")
-    def set_name(self, m):
-        """设置name"""
-        print(self.nn)
-        self.name = m
-    
-    @property
-    def nn(self):
-        return self.XX
-    
-    # @click.option('-n', default="XXXX", help="设置XXX")
-    # @nn.setter
-    # def nn(self, value):
-    #     self.XX = value
 
 
 class Beta(CommandBase):
@@ -104,7 +32,9 @@ class Beta(CommandBase):
     Curabitur mollis semper velit a suscipit.
     """
     
-    def __init__(self):
+    # test success
+    
+    def __init__(self):  # test success
         self.x = 'DefaultX'
     
     @click.command()
@@ -112,45 +42,165 @@ class Beta(CommandBase):
         "--input",
         help="Input [magenta bold]file[/]. [dim]\[default: a custom default][/]",
     )
-    def red(self, input: str) -> None:
-        """Do something blue"""
-        print("input....")
-        print(input)
-        print(self.xx)
-        print('Beta works as well!')
+    def call_other(self, input: str):  # test success
+        """call_other"""
         print(self.x)
-        self._syy(input)
-        print(self.x)
-        self._cyy(input)
-        print(self.x)
-        self._yyy(input)
-        print(self.x)
-    
-    @click.command(help="Input [magenta bold]file[/]. [dim]\[default: a custom default][/]")
-    @click.option(
-        "--input",
-        help="Input [magenta bold]file[/]. [dim]\[default: a custom default][/]",
-    )
-    def xx(self, input):
         self.x = input
+        print(self.x)
+        self._syy(self.x)
+        print(self.x)
+        self._cyy(self.x)
+        print(self.x)
+        self._yyy(self.x)
+        print(self.x)
+        print("call_other")
     
-    @staticmethod
-    def _syy(input):
-        self = Beta
-        print(f"_syy::{self},input::{input}")
+    def call_other1(self, input: Annotated[str, "输入"]):  # test success
+        """call_other1"""
+        print(self.x)
         self.x = input
+        print(self.x)
+        self._syy(self.x)
+        print(self.x)
+        self._cyy(self.x)
+        print(self.x)
+        self._yyy(self.x)
+        print(self.x)
+        print("call_other1")
     
     @classmethod
-    def _cyy(cls, input):
+    def ccall_other(cls, input: Annotated[str, "输入"] = 1):  # test success
+        """ccall_other"""
+        self = cls
+        print(self.x)
+        self.x = input
+        print(self.x)
+        self._syy(self.x)
+        print(self.x)
+        self._cyy(self.x)
+        print(self.x)
+        self._yyy(self.x)
+        print(self.x)
+        print("ccall_other")
+    
+    @classmethod
+    def scall_other(cls, input: str):  # test success
+        """scall_other"""
+        self = cls
+        print(self.x)
+        self.x = input
+        print(self.x)
+        self._syy(self.x)
+        print(self.x)
+        self._cyy(self.x)
+        print(self.x)
+        self._yyy(self.x)
+        print(self.x)
+        print("scall_other")
+    
+    @staticmethod
+    def _syy(input):  # test success
+        self = Beta
+        print(f"_syy::{self},input::{input}")
+        self.x = f"{input},{'_syy'}"
+    
+    @classmethod
+    def _cyy(cls, input):  # test success
         self = cls
         print(f"_cyy::{self},input::{input}")
-        self.x = input
-        self.x = input
+        self.x = f"{input},{'_cyy'}"
     
-    def _yyy(self, input):
+    def _yyy(self, input):  # test success
         self = self
         print(f"_yyy::{self},input::{input}")
-        self.x = input
+        self.x = f"{input},{'_yyy'}"
+
+
+class Alpha(CommandBase):
+    """
+    Enable :point_right: [yellow]debug mode[/] :point_left:
+    """
+    # test success
+    
+    XX: object = 1
+    
+    name = "DefaultName"
+    zxcv: Annotated[str, "paramName"] = "paramName"
+    
+    @click.option('-m', default="NEW_NAME", help="设置NAME")  # test success
+    def set_name(self, m):  # test success
+        """设置name"""
+        self.name = m
+        print(self.name)
+        print("设置name")
+    
+    def xxx1(self, mm: Meter = 1):  # test success
+        """xxx1"""
+        print(mm)
+        print(self.name)
+        print("xxx1")
+    
+    def xxx2(self, mm: Meter):  # test success
+        """xxx2"""
+        print(mm)
+        print(self.name)
+        print("xxx2")
+    
+    @staticmethod
+    def sxxx1(mm: Annotated[int, "静态方法"]):  # test success
+        """sxxx1"""
+        print(mm)
+        print("sxxx1")
+    
+    @staticmethod
+    def sxxx2(mm: Annotated[int, "静态方法"] = 1):  # test success
+        """sxxx2"""
+        print(mm)
+        print("sxxx2")
+    
+    @classmethod
+    def cxxx1(cls, mm: Annotated[str, "类方法"] = "defaultValue"):  # test success
+        """cxxx1"""
+        print(cls.name)
+        print(mm)
+        print("cxxx1")
+    
+    @classmethod
+    def cxxx2(cls, mm: Annotated[str, "类方法"]):  # test success
+        """cxxx2"""
+        print(cls.name)
+        print(mm)
+        print("cxxx2")
+    
+    @click.command()
+    @click.option("--nn", help="nnnnnn")
+    def yyy(self, nn):  # test success
+        """yyy"""
+        print(nn)
+        print(self.name)
+        print("yyy")
+    
+    @staticmethod
+    @click.command()
+    @click.option("--nn", help="nnnnnn")
+    @click.option("--mm", help="mmmmmmmm")
+    def syyy(nn, mm):  # test success
+        """syyy"""
+        print(nn)
+        print(mm)
+        print("syyy")
+    
+    @classmethod
+    @click.command(name="cyyy")
+    @click.option("--nn", help="nnnnnn")
+    def cyyy(cls, nn):  # test success
+        """cyyy"""
+        print(nn)
+        print("cyyy")
+    
+    @property
+    def nn(self):
+        return self.XX
 
 
 class Gamma(Alpha):
