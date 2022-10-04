@@ -1,7 +1,14 @@
 """
 support register unlimited extensible command line tool
 """
+import functools
+import inspect
+import typing
+from functools import partial
+
+import typing_extensions
 from typing import Dict
+from inspect import Parameter
 
 try:
     import rich_click as click
@@ -20,6 +27,7 @@ except ImportError as e:
 
 CLASS_GROUP_ATTR_NAME = "__command_group__"
 CLASS_GROUP_OPTION_CALLBACKS = "__option_callbacks__"
+CLASS_INSTANCE = "__instance__"
 
 
 class CommandInstance:
@@ -34,17 +42,50 @@ class CommandInstance:
         self.origin = origin
     
     def __call__(self, *args, **kwargs):
-        if isinstance(self.origin, staticmethod):
-            return self.command(*args, **kwargs)
-        return self.command(self.klass, *args, **kwargs)
+        try:
+            if isinstance(self.origin, staticmethod):
+                return self.command(*args, **kwargs)
+            return self.command(self.klass, *args, **kwargs)
+        except Exception as e:
+            print(e)
+            print(args)
+            print(kwargs)
+            print(self.command)
+            print(self.klass)
+
+
+def get_typed_annotation(param: inspect.Parameter, globalns: typing.Dict[str, typing.Any]) -> typing.Any:
+    annotation = param.annotation
+    if isinstance(annotation, str):
+        annotation = typing.ForwardRef(annotation)
+        annotation = typing.evaluate_forwardref(annotation, globalns, globalns)
+    return annotation
+
+
+def get_typed_signature(call: typing.Callable[..., typing.Any], follow_wrapped: bool = True) -> inspect.Signature:
+    signature = inspect.signature(call, follow_wrapped=follow_wrapped)
+    globalns = getattr(call, "__globals__", {})
+    typed_params = [
+        inspect.Parameter(
+            name=param.name,
+            kind=param.kind,
+            default=param.default,
+            annotation=get_typed_annotation(param, globalns),
+        )
+        for param in signature.parameters.values()
+    ]
+    typed_signature = inspect.Signature(typed_params)
+    return typed_signature
 
 
 class CommandMetaclass(type):
     @staticmethod
-    def command_wrapper(attr_name, attr_value, klass):
+    def command_wrapper(attr_name, origin_attr_value, klass):
         """command_wrapper"""
-        if isinstance(attr_value, staticmethod) or isinstance(attr_value, classmethod):
-            attr_value = attr_value.__func__
+        if isinstance(origin_attr_value, staticmethod) or isinstance(origin_attr_value, classmethod):
+            attr_value = origin_attr_value.__func__
+        else:
+            attr_value = origin_attr_value
         if isinstance(attr_value, click.Command):
             """if the function body is packaged by Command"""
             return attr_value
@@ -56,7 +97,20 @@ class CommandMetaclass(type):
                 getattr(klass, CLASS_GROUP_OPTION_CALLBACKS).add(attr_value)
                 return None
             else:
+                if isinstance(origin_attr_value, classmethod):
+                    attr_value = partial(attr_value, klass)
+                elif not isinstance(origin_attr_value, staticmethod):
+                    attr_value = partial(attr_value, klass)
+                
+                endpoint_signature = get_typed_signature(attr_value, False)
+                signature_params = endpoint_signature.parameters
+                
                 attr = click.command(name=attr_name, help=attr_value.__doc__)(attr_value)
+                for k, v in signature_params.items():
+                    param_default = None if v.default == Parameter.empty else v.default
+                    param_type = None if v.annotation == Parameter.empty else v.annotation.__origin__
+                    param_doc = "" if v.annotation == Parameter.empty else " ".join(v.annotation.__metadata__)
+                    attr = click.option(f"--{k}", help=param_doc + f"  default: `{param_default}`", required=False if param_default else True, type=param_type, default=param_default)(attr)
                 setattr(klass, attr_name, attr)
                 return attr
     
@@ -84,6 +138,7 @@ class CommandMetaclass(type):
         """create klass and create group"""
         klass = super().__new__(mcs, name, bases, dct)
         setattr(klass, CLASS_GROUP_OPTION_CALLBACKS, set())
+        klass.__init__(klass)
         
         def cli(*args, **options):
             for option_callback in getattr(klass, CLASS_GROUP_OPTION_CALLBACKS):
@@ -93,10 +148,13 @@ class CommandMetaclass(type):
         klass_command_group: click.Group = getattr(klass, CLASS_GROUP_ATTR_NAME)
         """loop through all attr on class initializers"""
         for attr_name, attr_value in dct.items():
-            if attr_name.startswith("_"):
-                continue
             attr = getattr(klass, attr_name)
             if callable(attr):
+                if attr_name.startswith("_"):
+                    if not isinstance(attr_value, staticmethod) and not isinstance(attr_value, classmethod):
+                        setattr(klass, attr_name, partial(attr_value, klass))
+                    continue
+                
                 if not isinstance(attr, click.Command):
                     attr = mcs.command_wrapper(attr_name, attr_value, klass)
                     if not attr:
@@ -113,6 +171,8 @@ class CommandMetaclass(type):
                 klass_command_group.add_command(attr, attr_name)
             else:
                 """if it's not a callable"""
+                if attr_name.startswith("_"):
+                    continue
                 
                 def callback(ctx, param, value: bool, option_name=attr_name) -> None:
                     if not value or ctx.resilient_parsing:

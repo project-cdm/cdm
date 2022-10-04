@@ -7,6 +7,11 @@ class CommandBase(metaclass=CommandMetaclass):
     ...
 
 
+from typing_extensions import Annotated
+
+Meter = Annotated[float, "米"]
+
+
 class Alpha(CommandBase):
     """
     Enable :point_right: [yellow]debug mode[/] :point_left:
@@ -14,23 +19,24 @@ class Alpha(CommandBase):
     XX: object = 1
     
     name = "Name"
-    zxcv = "paramName"
+    zxcv: Annotated[str, "paramName"] = "paramName"
     
-    def xxx(self, mm):
+    def xxx(self, mm: Meter):
         """xxx"""
         print("xxx")
         print(self.name)
         print("xxx")
     
     @staticmethod
-    def sxxx(mm):
+    def sxxx(mm: Annotated[int, "静态方法"] = 1):
         """sxxx"""
         print("sxxx")
     
     @classmethod
-    def cxxx(cls, mm):
+    def cxxx(cls, mm: Annotated[str, "类方法"] = "defaultValue"):
         """cxxx"""
         print(cls.name)
+        print(mm)
         print("cxxx")
     
     @click.command()
@@ -99,7 +105,7 @@ class Beta(CommandBase):
     """
     
     def __init__(self):
-        self.x = None
+        self.x = 'DefaultX'
     
     @click.command()
     @click.option(
@@ -108,8 +114,16 @@ class Beta(CommandBase):
     )
     def red(self, input: str) -> None:
         """Do something blue"""
+        print("input....")
         print(input)
+        print(self.xx)
         print('Beta works as well!')
+        print(self.x)
+        self._syy(input)
+        print(self.x)
+        self._cyy(input)
+        print(self.x)
+        self._yyy(input)
         print(self.x)
     
     @click.command(help="Input [magenta bold]file[/]. [dim]\[default: a custom default][/]")
@@ -118,6 +132,24 @@ class Beta(CommandBase):
         help="Input [magenta bold]file[/]. [dim]\[default: a custom default][/]",
     )
     def xx(self, input):
+        self.x = input
+    
+    @staticmethod
+    def _syy(input):
+        self = Beta
+        print(f"_syy::{self},input::{input}")
+        self.x = input
+    
+    @classmethod
+    def _cyy(cls, input):
+        self = cls
+        print(f"_cyy::{self},input::{input}")
+        self.x = input
+        self.x = input
+    
+    def _yyy(self, input):
+        self = self
+        print(f"_yyy::{self},input::{input}")
         self.x = input
 
 
