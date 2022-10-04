@@ -168,16 +168,18 @@ class CommandMetaclass(type):
                 """if it's not a callable"""
                 if attr_name.startswith("_"):
                     continue
+                annotated = klass.__annotations__.get(attr_name)
+                attr_doc = attr_name if not annotated else " ".join(annotated.__metadata__) if hasattr(annotated, '__metadata__') else annotated
                 
                 def callback(ctx, param, value: bool, option_name=attr_name) -> None:
                     if not value or ctx.resilient_parsing:
                         return
-                    click.echo(getattr(klass(), option_name), ctx.color)
+                    click.echo((lambda: getattr(klass, option_name))(), color=ctx.color)
                     ctx.exit()
                 
                 klass_command_group.params.append(
                     click.Option(param_decls=(f"--{attr_name}",),
-                                 help=attr_name,
+                                 help=f"{attr_doc}  default: `{attr}`",
                                  is_flag=True,
                                  expose_value=False,
                                  is_eager=True,
